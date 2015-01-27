@@ -1,291 +1,292 @@
-<?php  if ( ! defined('BASEPATH')) exit('No direct script access allowed');
+<?php
 
 /**
-* Name:			Barcode
-*
-* Description:	Generates barcodes
-*
-*/
-
-/**
- * OVERLOADING NAILS' BARCODE MODULE
+ * This class provies an interface for generating Barcodes
  *
- * Note the name of this class; done like this to allow apps to extend this class.
- * Read full explanation at the bottom of this file.
- *
- **/
+ * @package     Nails
+ * @subpackage  module-barcode
+ * @category    Controller
+ * @author      Nails Dev Team
+ * @link
+ */
 
 class NAILS_Barcode extends NAILS_Controller
 {
-	protected $_cache_dir;
-	protected $_cache_headers_set;
-	protected $_cache_headers_max_age;
-	protected $_cache_headers_last_modified;
-	protected $_cache_headers_expires;
-	protected $_cache_headers_file;
-	protected $_cache_headers_hit;
+    protected $cacheDir;
+    protected $cacheHeadersSet;
+    protected $cacheHeadersMaxAge;
+    protected $cacheHeadersLastModified;
+    protected $cacheHeadersExpires;
+    protected $cacheHeadersFile;
+    protected $cacheHeadersHit;
+
+    // --------------------------------------------------------------------------
+
+    /**
+     * Construct the controller, set defaults
+     */
+    public function __construct()
+    {
+        parent::__construct();
+
+        // --------------------------------------------------------------------------
+
+        $this->cacheDir = DEPLOY_CACHE_DIR;
+    }
+
+    // --------------------------------------------------------------------------
+
+    /**
+     * Serve a file from the cache, setting headers as we go then halt execution
+     * @param  string  $cacheFile The cache file's filename
+     * @param  boolean $hit       Whether this was a cache hit or not
+     * @return void
+     */
+    protected function serveFromCache($cacheFile, $hit = true)
+    {
+        /**
+         * Cache object exists, set the appropriate headers and return the
+         * contents of the file.
+         **/
+
+        $_stats = stat($this->cacheDir . $cacheFile);
+
+        //  Set cache headers
+        $this->setCacheHeaders($_stats[9], $cacheFile, $hit);
+
+        header('Content-Type: image/png', true);
+
+        // --------------------------------------------------------------------------
+
+        //  Send the contents of the file to the browser
+        echo file_get_contents($this->cacheDir . $cacheFile);
+
+        /**
+         * Kill script, th, th, that's all folks.
+         * Stop the output class from hijacking our headers and
+         * setting an incorrect Content-Type
+         **/
+
+        exit(0);
+    }
+
+    // --------------------------------------------------------------------------
+
+    /**
+     * Set the correct cache headers
+     * @param string  $lastModified The time the source file was last modified
+     * @param string  $file         The filename
+     * @param boolean $hit          Whether this was a cache hit or not
+     */
+    protected function setCacheHeaders($lastModified, $file, $hit)
+    {
+        //  Set some flags
+        $this->cacheHeadersSet          = true;
+        $this->cacheHeadersMaxAge       = 31536000; // 1 year
+        $this->cacheHeadersLastModified = $lastModified;
+        $this->cacheHeadersExpires      = time() + $this->cacheHeadersMaxAge;
+        $this->cacheHeadersFile         = $file;
+        $this->cacheHeadersHit          = $hit ? 'HIT' : 'MISS';
+
+        // --------------------------------------------------------------------------
+
+        header('Cache-Control: max-age=' . $this->cacheHeadersMaxAge . ', must-revalidate', true);
+        header('Last-Modified: ' . date('r', $this->cacheHeadersLastModified), true);
+        header('Expires: ' . date('r', $this->cacheHeadersExpires), true);
+        header('ETag: "' . md5($this->cacheHeadersFile) . '"', true);
+        header('X-CDN-CACHE: ' . $this->cacheHeadersHit, true);
+    }
+
+    // --------------------------------------------------------------------------
+
+    /**
+     * Unset cache headers set by setCacheHeaders()
+     * @return void
+     */
+    protected function unsetCacheHeaders()
+    {
+        if (empty($this->cacheHeadersSet)) {
 
+            return false;
+        }
+
+        // --------------------------------------------------------------------------
 
-	// --------------------------------------------------------------------------
+        //  Remove previously set headers
+        header_remove('Cache-Control');
+        header_remove('Last-Modified');
+        header_remove('Expires');
+        header_remove('ETag');
+        header_remove('X-CDN-CACHE');
 
+        // --------------------------------------------------------------------------
 
-	public function __construct()
-	{
-		parent::__construct();
+        //  Set new "do not cache" headers
+        header('Expires: Mon, 26 Jul 1997 05:00:00 GMT', true);
+        header('Last-Modified: ' . gmdate('D, d M Y H:i:s') . ' GMT', true);
+        header('Cache-Control: no-store, no-cache, must-revalidate', true);
+        header('Cache-Control: post-check=0, pre-check=0', false);
+        header('Pragma: no-cache', true);
+        header('X-CDN-CACHE: MISS', true);
+    }
 
-		// --------------------------------------------------------------------------
+    // --------------------------------------------------------------------------
 
-		$this->_cache_dir = DEPLOY_CACHE_DIR;
-	}
+    /**
+     * Serve the "not modified" headers, if appropriate
+     * @param  string $file The file to server headers for
+     * @return boolean
+     */
+    protected function serveNotModified($file)
+    {
+        if (function_exists('apache_request_headers')) {
 
+            $headers = apache_request_headers();
 
-	// --------------------------------------------------------------------------
+        } elseif ($this->input->server('HTTP_IF_NONE_MATCH')) {
 
+            $headers                  = array();
+            $headers['If-None-Match'] = $this->input->server('HTTP_IF_NONE_MATCH');
 
-	protected function _serve_from_cache( $cache_file, $hit = TRUE )
-	{
-		/**
-		 * Cache object exists, set the appropriate headers and return the
-		 * contents of the file.
-		 **/
+        } elseif (isset($_SERVER)) {
 
-		$_stats = stat( $this->_cache_dir . $cache_file );
+            /**
+             * Can we work the headers out for ourself?
+             * Credit: http://www.php.net/manual/en/function.apache-request-headers.php#70810
+             **/
 
-		//	Set cache headers
-		$this->_set_cache_headers( $_stats[9], $cache_file, $hit );
+            $headers = array();
+            $rxHttp  = '/\AHTTP_/';
+            foreach ($_SERVER as $key => $val) {
 
-		header( 'Content-Type: image/png', TRUE );
+                if (preg_match($rxHttp, $key)) {
 
-		// --------------------------------------------------------------------------
+                    $arhKey    = preg_replace($rxHttp, '', $key);
+                    $rxMatches = array();
 
-		//	Send the contents of the file to the browser
-		echo file_get_contents( $this->_cache_dir . $cache_file );
+                    /**
+                     * Do some nasty string manipulations to restore the original letter case
+                     * this should work in most cases
+                     **/
 
-		/**
-		 * Kill script, th, th, that's all folks.
-		 * Stop the output class from hijacking our headers and
-		 * setting an incorrect Content-Type
-		 **/
+                    $rxMatches = explode('_', $arhKey);
 
-		exit(0);
-	}
+                    if (count($rxMatches) > 0 && strlen($arhKey) > 2) {
 
+                        foreach ($rxMatches as $ak_key => $ak_val) {
 
-	// --------------------------------------------------------------------------
+                            $rxMatches[$ak_key] = ucfirst($ak_val);
+                        }
 
+                        $arhKey = implode('-', $rxMatches);
+                    }
 
-	protected function _set_cache_headers( $last_modified, $file, $hit )
-	{
-		//	Set some flags
-		$this->_cache_headers_set			= TRUE;
-		$this->_cache_headers_max_age		= 31536000; // 1 year
-		$this->_cache_headers_last_modified	= $last_modified;
-		$this->_cache_headers_expires		= time() + $this->_cache_headers_max_age;
-		$this->_cache_headers_file			= $file;
-		$this->_cache_headers_hit			= $hit ? 'HIT' : 'MISS';
+                    $headers[$arhKey] = $val;
+                }
+            }
 
-		// --------------------------------------------------------------------------
+        } else {
 
-		header( 'Cache-Control: max-age=' . $this->_cache_headers_max_age . ', must-revalidate', TRUE );
-		header( 'Last-Modified: ' . date( 'r', $this->_cache_headers_last_modified ), TRUE );
-		header( 'Expires: ' . date( 'r', $this->_cache_headers_expires ), TRUE );
-		header( 'ETag: "' . md5( $this->_cache_headers_file ) . '"', TRUE );
-		header( 'X-CDN-CACHE: ' . $this->_cache_headers_hit, TRUE );
-	}
+            //  Give up.
+            return false;
+        }
 
+        if (isset($headers['If-None-Match']) && $headers['If-None-Match'] == '"' . md5($file) . '"') {
 
-	// --------------------------------------------------------------------------
+            header($this->input->server('SERVER_PROTOCOL') . ' 304 Not Modified', true, 304);
+            return true;
+        }
 
+        // --------------------------------------------------------------------------
 
-	protected function _unset_cache_headers()
-	{
-		if ( empty( $this->_cache_headers_set ) ) :
+        return false;
+    }
 
-			return FALSE;
+    // --------------------------------------------------------------------------
 
-		endif;
+    public function index()
+    {
+        $string    = $this->uri->segment(2) ? $this->uri->segment(2) : '';
+        $width     = $this->uri->segment(3) ? $this->uri->segment(3) : null;
+        $height    = $this->uri->segment(4) ? $this->uri->segment(4) : null;
+        $cacheFile = 'BARCODE-' . $string. '-' . $width . 'x' . $height . '.png';
 
-		// --------------------------------------------------------------------------
+        // --------------------------------------------------------------------------
 
-		//	Remove previously set headers
-		header_remove( 'Cache-Control' );
-		header_remove( 'Last-Modified' );
-		header_remove( 'Expires' );
-		header_remove( 'ETag' );
-		header_remove( 'X-CDN-CACHE' );
+        /**
+         * Check the request headers; avoid hitting the disk at all if possible. If
+         * the Etag matches then send a Not-Modified header and terminate execution.
+         */
 
-		// --------------------------------------------------------------------------
+        if ($this->serveNotModified($cacheFile)) {
 
-		//	Set new "do not cache" headers
-		header( 'Expires: Mon, 26 Jul 1997 05:00:00 GMT', TRUE );
-		header( 'Last-Modified: ' . gmdate( 'D, d M Y H:i:s' ) . ' GMT', TRUE );
-		header( 'Cache-Control: no-store, no-cache, must-revalidate', TRUE );
-		header( 'Cache-Control: post-check=0, pre-check=0', FALSE );
-		header( 'Pragma: no-cache', TRUE );
-		header( 'X-CDN-CACHE: MISS', TRUE );
-	}
+            return;
+        }
 
+        // --------------------------------------------------------------------------
 
-	// --------------------------------------------------------------------------
+        /**
+         * The browser does not have a local cache (or it's out of date) check the cache
+         * to see if this image has been processed already; serve it up if it has.
+         */
 
+        if (file_exists($this->cacheDir . $cacheFile)) {
 
-	protected function _serve_not_modified( $file )
-	{
-		if ( function_exists( 'apache_request_headers' ) ) :
+            $this->serveFromCache($cacheFile);
 
-			$_headers = apache_request_headers();
+        } else {
 
-		elseif ( $this->input->server( 'HTTP_IF_NONE_MATCH' ) ) :
+            //  Generate and save to cache
+            $this->load->library('barcode/barcode_generator');
+            $result = $this->barcode_generator->save($string, $this->cacheDir . $cacheFile, $width, $height);
 
-			$_headers					= array();
-			$_headers['If-None-Match']	= $this->input->server( 'HTTP_IF_NONE_MATCH' );
+            if ($result) {
 
-		elseif( isset( $_SERVER ) ) :
+                $this->serveFromCache($cacheFile);
 
-			/**
-			 * Can we work the headers out for ourself?
-			 * Credit: http://www.php.net/manual/en/function.apache-request-headers.php#70810
-			 **/
+            } else {
 
-			$_headers	= array();
-			$rx_http	= '/\AHTTP_/';
-			foreach ( $_SERVER as $key => $val ) :
+                header('Cache-Control: no-cache, must-revalidate', true);
+                header('Expires: Mon, 26 Jul 1997 05:00:00 GMT', true);
+                header('Content-type: application/json', true);
+                header($this->input->server('SERVER_PROTOCOL') . ' 400 Bad Request', true, 400);
 
-				if ( preg_match( $rx_http, $key ) ) :
+                // --------------------------------------------------------------------------
 
-					$arh_key	= preg_replace($rx_http, '', $key);
-					$rx_matches	= array();
+                $out = array(
+                    'status'  => 400,
+                    'message' => 'Failed to generate barcode.',
+                    'error'   => $this->barcode_generator->last_error()
+                );
 
-					/**
-					 * Do some nasty string manipulations to restore the original letter case
-					 * this should work in most cases
-					 **/
+                echo json_encode($out);
 
-					$rx_matches = explode('_', $arh_key);
+                // --------------------------------------------------------------------------
 
-					if ( count( $rx_matches ) > 0 && strlen( $arh_key ) > 2 ) :
+                /**
+                 * Kill script, th, th, that's all folks.
+                 * Stop the output class from hijacking our headers and
+                 * setting an incorrect Content-Type
+                 **/
 
-						foreach ( $rx_matches as $ak_key => $ak_val ) :
+                exit(0);
+            }
+        }
+    }
 
-							$rx_matches[$ak_key] = ucfirst( $ak_val );
+    // --------------------------------------------------------------------------
 
-						endforeach;
-
-						$arh_key = implode( '-', $rx_matches );
-
-					endif;
-
-					$_headers[$arh_key] = $val;
-
-				endif;
-
-			endforeach;
-
-		else :
-
-			//	Give up.
-			return FALSE;
-
-		endif;
-
-		if ( isset( $_headers['If-None-Match'] ) && $_headers['If-None-Match'] == '"' . md5( $file ) . '"' ) :
-
-			header( $this->input->server( 'SERVER_PROTOCOL' ) . ' 304 Not Modified', TRUE, 304 );
-			return TRUE;
-
-		endif;
-
-		// --------------------------------------------------------------------------
-
-		return FALSE;
-	}
-
-
-	// --------------------------------------------------------------------------
-
-	public function index()
-	{
-		$_string		= $this->uri->segment( 2 ) ? $this->uri->segment( 2 ) : '';
-		$_width			= $this->uri->segment( 3 ) ? $this->uri->segment( 3 ) : NULL;
-		$_height		= $this->uri->segment( 4 ) ? $this->uri->segment( 4 ) : NULL;
-		$_cache_file	= 'BARCODE-' . $_string. '-' . $_width . 'x' . $_height . '.png';
-
-		// --------------------------------------------------------------------------
-
-		//	Check the request headers; avoid hitting the disk at all if possible. If the Etag
-		//	matches then send a Not-Modified header and terminate execution.
-
-		if ( $this->_serve_not_modified( $_cache_file ) ) :
-
-			return;
-
-		endif;
-
-		// --------------------------------------------------------------------------
-
-		//	The browser does not have a local cache (or it's out of date) check the
-		//	cache to see if this image has been processed already; serve it up if
-		//	it has.
-
-		if ( file_exists( $this->_cache_dir . $_cache_file ) ) :
-
-			$this->_serve_from_cache( $_cache_file );
-
-		else :
-
-			//	Generate and save to cache
-			$this->load->library( 'barcode/barcode_generator' );
-			$_result = $this->barcode_generator->save( $_string, $this->_cache_dir . $_cache_file, $_width, $_height );
-
-			if ( $_result ) :
-
-				$this->_serve_from_cache( $_cache_file );
-
-			else :
-
-				header( 'Cache-Control: no-cache, must-revalidate', TRUE );
-				header( 'Expires: Mon, 26 Jul 1997 05:00:00 GMT', TRUE );
-				header( 'Content-type: application/json', TRUE );
-				header( $this->input->server( 'SERVER_PROTOCOL' ) . ' 400 Bad Request', TRUE, 400 );
-
-				// --------------------------------------------------------------------------
-
-				$_out = array(
-
-					'status'	=> 400,
-					'message'	=> 'Failed to generate barcode.',
-					'error'		=> $this->barcode_generator->last_error()
-
-				);
-
-				echo json_encode( $_out );
-
-				// --------------------------------------------------------------------------
-
-				//	Kill script, th, th, that's all folks.
-				//	Stop the output class from hijacking our headers and
-				//	setting an incorrect Content-Type
-
-				exit(0);
-
-			endif;
-
-		endif;
-	}
-
-
-	// --------------------------------------------------------------------------
-
-
-	public function _remap()
-	{
-		$this->index();
-	}
+    /**
+     * Map all requests to index()
+     * @return void
+     */
+    public function _remap()
+    {
+        $this->index();
+    }
 }
 
-
 // --------------------------------------------------------------------------
-
 
 /**
  * OVERLOADING NAILS' EMAIL MODULES
@@ -311,14 +312,9 @@ class NAILS_Barcode extends NAILS_Controller
  *
  **/
 
-if ( ! defined( 'NAILS_ALLOW_EXTENSION_BARCODE' ) ) :
+if (!defined('NAILS_ALLOW_EXTENSION_BARCODE')) {
 
-	class Barcode extends NAILS_Barcode
-	{
-	}
-
-endif;
-
-
-/* End of file barcode.php */
-/* Location: ./modules-barcode/barcode/controllers/barcode.php */
+    class Barcode extends NAILS_Barcode
+    {
+    }
+}
