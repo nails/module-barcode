@@ -1,12 +1,6 @@
 {
     "name": "nailsapp/module-barcode",
-    "keywords":
-    [
-        "Nails",
-        "Shed Collective",
-        "CodeIgniter",
-        "Barcode Module"
-    ],
+    "keywords": ["Nails", "Shed Collective", "CodeIgniter", "Barcode Module"],
     "homepage": "http://nailsapp.co.uk/modules/barcode",
     "description": "This is the \"Barcode\" module for Nails.",
     "license": "MIT",
