@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This class provides an interface for generating Barcodes
+ * This class provides a front end route for generating barcodes
  *
  * @package     Nails
  * @subpackage  module-barcode

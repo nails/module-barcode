@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * This class provides an interface for generating Barcodes
+ *
+ * @package     Nails
+ * @subpackage  module-barcode
+ * @category    Library
+ * @author      Nails Dev Team
+ * @link
+ */
+
 namespace Nails\Barcode\Library;
 
 class Generator
