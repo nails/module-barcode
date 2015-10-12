@@ -1,4 +1,4 @@
-#Barcode Module for Nails
+# Barcode Module for Nails
 
 This is the barcode module for nails, it brings a unified interface for generating barcodes.
 

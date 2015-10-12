@@ -1,7 +1,7 @@
 <?php
 
 /**
- * This class provies an interface for generating Barcodes
+ * This class provides an interface for generating Barcodes
  *
  * @package     Nails
  * @subpackage  module-barcode
@@ -10,7 +10,9 @@
  * @link
  */
 
-class NAILS_Barcode extends NAILS_Controller
+use \Nails\Common\Controller\Base;
+
+class Barcode extends Base
 {
     protected $cacheDir;
     protected $cacheHeadersSet;
@@ -237,8 +239,8 @@ class NAILS_Barcode extends NAILS_Controller
         } else {
 
             //  Generate and save to cache
-            $this->load->library('barcode/barcode_generator');
-            $result = $this->barcode_generator->save($string, $this->cacheDir . $cacheFile, $width, $height);
+            $oGenerator = \Nails\Factory::service('Generator', 'nailsapp/module-barcode');
+            $result = $oGenerator->save($string, $this->cacheDir . $cacheFile, $width, $height);
 
             if ($result) {
 
@@ -256,7 +258,7 @@ class NAILS_Barcode extends NAILS_Controller
                 $out = array(
                     'status'  => 400,
                     'message' => 'Failed to generate barcode.',
-                    'error'   => $this->barcode_generator->last_error()
+                    'error'   => $oGenerator->last_error()
                 );
 
                 echo json_encode($out);
@@ -283,38 +285,5 @@ class NAILS_Barcode extends NAILS_Controller
     public function _remap()
     {
         $this->index();
-    }
-}
-
-// --------------------------------------------------------------------------
-
-/**
- * OVERLOADING NAILS' EMAIL MODULES
- *
- * The following block of code makes it simple to extend one of the core Nails
- * controllers. Some might argue it's a little hacky but it's a simple 'fix'
- * which negates the need to massively extend the CodeIgniter Loader class
- * even further (in all honesty I just can't face understanding the whole
- * Loader class well enough to change it 'properly').
- *
- * Here's how it works:
- *
- * CodeIgniter instantiate a class with the same name as the file, therefore
- * when we try to extend the parent class we get 'cannot redeclare class X' errors
- * and if we call our overloading class something else it will never get instantiated.
- *
- * We solve this by prefixing the main class with NAILS_ and then conditionally
- * declaring this helper class below; the helper gets instantiated et voila.
- *
- * If/when we want to extend the main class we simply define NAILS_ALLOW_EXTENSION_CLASSNAME
- * before including this PHP file and extend as normal (i.e in the same way as below);
- * the helper won't be declared so we can declare our own one, app specific.
- *
- **/
-
-if (!defined('NAILS_ALLOW_EXTENSION_BARCODE')) {
-
-    class Barcode extends NAILS_Barcode
-    {
     }
 }
