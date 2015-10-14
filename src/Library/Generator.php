@@ -14,7 +14,7 @@ namespace Nails\Barcode\Library;
 
 class Generator
 {
-    use \Nails\Common\Traits\ErrorHandling;
+    use Nails\Common\Traits\ErrorHandling;
 
     // --------------------------------------------------------------------------
 
