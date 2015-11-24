@@ -259,7 +259,7 @@ class Barcode extends Base
                 $out = array(
                     'status'  => 400,
                     'message' => 'Failed to generate barcode.',
-                    'error'   => $oGenerator->last_error()
+                    'error'   => $oGenerator->lastError()
                 );
 
                 echo json_encode($out);

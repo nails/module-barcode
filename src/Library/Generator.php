@@ -51,7 +51,7 @@ class Generator
 
         if (empty($sString)) {
 
-            $this->_set_error('String cannot be empty');
+            $this->setError('String cannot be empty');
             return false;
         }
 
