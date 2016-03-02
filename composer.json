@@ -42,7 +42,8 @@
         "nails" :
         {
             "moduleName": "barcode",
-            "type": "module"
+            "type": "module",
+            "namespace": "Nails\\Barcode\\"
         }
     }
 }
