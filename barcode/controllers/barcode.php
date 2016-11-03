@@ -11,7 +11,9 @@
  */
 
 use Nails\Factory;
-class Barcode extends NAILS_Controller
+use App\Controller\Base;
+
+class Barcode extends Base
 {
     protected $cacheDir;
     protected $cacheHeadersSet;
