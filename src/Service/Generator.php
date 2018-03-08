@@ -10,7 +10,7 @@
  * @link
  */
 
-namespace Nails\Barcode\Library;
+namespace Nails\Barcode\Service;
 
 class Generator
 {

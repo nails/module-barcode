@@ -1,6 +1,6 @@
 <?php
 
-namespace Nails\Barcode\Library;
+namespace Nails\Barcode\Service;
 
 class GeneratorTest extends \PHPUnit_Framework_TestCase
 {

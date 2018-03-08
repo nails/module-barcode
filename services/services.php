@@ -1,13 +1,13 @@
 <?php
 
-return array(
-    'services' => array(
+return [
+    'services' => [
         'Generator' => function () {
-            if (class_exists('\App\Barcode\Library\Generator')) {
-                return new \App\Barcode\Library\Generator();
+            if (class_exists('\App\Barcode\Service\Generator')) {
+                return new \App\Barcode\Service\Generator();
             } else {
-                return new \Nails\Barcode\Library\Generator();
+                return new \Nails\Barcode\Service\Generator();
             }
         }
-    )
-);
+    ]
+];
