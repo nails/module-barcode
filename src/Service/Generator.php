@@ -208,7 +208,7 @@ class Generator
 
         if ($rImg) {
 
-            header('Content-type: image/png');
+            header('Content-Type: image/png');
             imagepng($rImg);
             imagedestroy($rImg);
             exit(0);
