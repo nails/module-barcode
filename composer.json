@@ -1,5 +1,5 @@
 {
-    "name": "nailsapp/module-barcode",
+    "name": "nails/module-barcode",
     "keywords": ["Nails", "Shed Collective", "CodeIgniter", "Barcode Module"],
     "homepage": "http://nailsapp.co.uk/modules/barcode",
     "description": "This is the \"Barcode\" module for Nails.",
@@ -27,7 +27,7 @@
     "prefer-stable": true,
     "require":
     {
-        "nailsapp/common": "dev-develop"
+        "nails/common": "dev-develop"
     },
     "require-dev":
     {

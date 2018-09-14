@@ -240,7 +240,7 @@ class Barcode extends Base
         } else {
 
             //  Generate and save to cache
-            $oGenerator = Factory::service('Generator', 'nailsapp/module-barcode');
+            $oGenerator = Factory::service('Generator', 'nails/module-barcode');
             $result = $oGenerator->save($string, $this->cacheDir . $cacheFile, $width, $height);
 
             if ($result) {
