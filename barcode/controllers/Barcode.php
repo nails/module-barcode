@@ -209,9 +209,10 @@ class Barcode extends Base
 
     public function index()
     {
-        $string    = $this->uri->segment(2) ? $this->uri->segment(2) : '';
-        $width     = $this->uri->segment(3) ? $this->uri->segment(3) : null;
-        $height    = $this->uri->segment(4) ? $this->uri->segment(4) : null;
+        $oUri      = Factory::service('Uri');
+        $string    = $oUri->segment(2) ?: '';
+        $width     = $oUri->segment(3) ?: null;
+        $height    = $oUri->segment(4) ?: null;
         $cacheFile = 'BARCODE-' . $string. '-' . $width . 'x' . $height . '.png';
 
         // --------------------------------------------------------------------------
