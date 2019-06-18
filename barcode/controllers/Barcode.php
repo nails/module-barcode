@@ -31,9 +31,6 @@ class Barcode extends Base
     public function __construct()
     {
         parent::__construct();
-
-        // --------------------------------------------------------------------------
-
         $this->cacheDir = CACHE_PATH;
     }
 
@@ -142,14 +139,15 @@ class Barcode extends Base
      */
     protected function serveNotModified($file)
     {
+        $oInput = Factory::service('Input');
         if (function_exists('apache_request_headers')) {
 
             $headers = apache_request_headers();
 
-        } elseif ($this->input->server('HTTP_IF_NONE_MATCH')) {
+        } elseif ($oInput->server('HTTP_IF_NONE_MATCH')) {
 
             $headers                  = array();
-            $headers['If-None-Match'] = $this->input->server('HTTP_IF_NONE_MATCH');
+            $headers['If-None-Match'] = $oInput->server('HTTP_IF_NONE_MATCH');
 
         } elseif (isset($_SERVER)) {
 
@@ -177,7 +175,6 @@ class Barcode extends Base
                     if (count($rxMatches) > 0 && strlen($arhKey) > 2) {
 
                         foreach ($rxMatches as $ak_key => $ak_val) {
-
                             $rxMatches[$ak_key] = ucfirst($ak_val);
                         }
 
@@ -196,7 +193,7 @@ class Barcode extends Base
 
         if (isset($headers['If-None-Match']) && $headers['If-None-Match'] == '"' . md5($file) . '"') {
 
-            header($this->input->server('SERVER_PROTOCOL') . ' 304 Not Modified', true, 304);
+            header($oInput->server('SERVER_PROTOCOL') . ' 304 Not Modified', true, 304);
             return true;
         }
 
@@ -209,6 +206,7 @@ class Barcode extends Base
 
     public function index()
     {
+        $oInput    = Factory::service('Input');
         $oUri      = Factory::service('Uri');
         $string    = $oUri->segment(2) ?: '';
         $width     = $oUri->segment(3) ?: null;
@@ -223,7 +221,6 @@ class Barcode extends Base
          */
 
         if ($this->serveNotModified($cacheFile)) {
-
             return;
         }
 
@@ -253,7 +250,7 @@ class Barcode extends Base
                 header('Cache-Control: no-cache, must-revalidate', true);
                 header('Expires: Mon, 26 Jul 1997 05:00:00 GMT', true);
                 header('Content-Type: application/json', true);
-                header($this->input->server('SERVER_PROTOCOL') . ' 400 Bad Request', true, 400);
+                header($oInput->server('SERVER_PROTOCOL') . ' 400 Bad Request', true, 400);
 
                 // --------------------------------------------------------------------------
 
