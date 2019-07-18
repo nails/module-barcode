@@ -10,6 +10,7 @@
  * @link
  */
 
+use Nails\Common\Service\FileCache;
 use Nails\Factory;
 use App\Controller\Base;
 
@@ -31,7 +32,10 @@ class Barcode extends Base
     public function __construct()
     {
         parent::__construct();
-        $this->cacheDir = CACHE_PATH;
+
+        /** @var FileCache $oFileCache */
+        $oFileCache = Factory::service('FileCache');
+        $this->cacheDir = $oFileCache->getDir();
     }
 
     // --------------------------------------------------------------------------
