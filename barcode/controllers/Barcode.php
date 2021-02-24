@@ -10,6 +10,7 @@
  * @link
  */
 
+use Nails\Barcode\Constants;
 use Nails\Common\Service\FileCache;
 use Nails\Factory;
 use App\Controller\Base;
@@ -242,7 +243,7 @@ class Barcode extends Base
         } else {
 
             //  Generate and save to cache
-            $oGenerator = Factory::service('Generator', 'nails/module-barcode');
+            $oGenerator = Factory::service('Generator', Constants::MODULE_SLUG);
             $result = $oGenerator->save($string, $this->cacheDir . $cacheFile, $width, $height);
 
             if ($result) {
